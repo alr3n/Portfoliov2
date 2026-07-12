@@ -4,8 +4,10 @@ import * as THREE from 'three'
 import ParticlePortrait from './ParticlePortrait.jsx'
 import { scrollState } from './scrollState.js'
 
+const isMobile = typeof window !== 'undefined' && window.innerWidth <= 860
+
 /** Slow-drifting dust field for depth. */
-function Dust({ count = 350 }) {
+function Dust({ count = isMobile ? 160 : 350 }) {
   const ref = useRef()
   const positions = useMemo(() => {
     const arr = new Float32Array(count * 3)
@@ -62,8 +64,8 @@ export default function Scene() {
   return (
     <div className="webgl-layer" aria-hidden="true">
       <Canvas
-        camera={{ position: [0, 0, 5], fov: 50 }}
-        dpr={[1, 1.8]}
+        camera={{ position: [0, 0, 5], fov: isMobile ? 58 : 50 }}
+        dpr={isMobile ? [1, 1.3] : [1, 1.8]}
         gl={{ antialias: false, alpha: true, powerPreference: 'high-performance' }}
       >
         <Suspense fallback={null}>
