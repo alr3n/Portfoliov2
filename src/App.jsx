@@ -32,8 +32,18 @@ export default function App() {
     }
     window.addEventListener('pointermove', onMove)
 
+    // ---- keep ScrollTrigger honest across mobile browsers' dynamic
+    // address-bar show/hide, which fires resize events mid-scroll ----
+    let resizeTimer
+    const onResize = () => {
+      clearTimeout(resizeTimer)
+      resizeTimer = setTimeout(() => ScrollTrigger.refresh(), 200)
+    }
+    window.addEventListener('orientationchange', onResize)
+
     const ctx = gsap.context(() => {
       const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      const isDesktop = window.matchMedia('(min-width: 861px)').matches
 
       // ---- preloader → hero intro ----
       const intro = gsap.timeline()
@@ -55,17 +65,25 @@ export default function App() {
         scrollTrigger: { trigger: '.hero', start: 'bottom 90%', end: 'bottom 20%', scrub: true }
       })
 
-      // ---- about statement: word-by-word ignition ----
-      gsap.to('[data-words] .word', {
-        opacity: 1,
-        stagger: 0.06,
-        ease: 'none',
-        scrollTrigger: { trigger: '.about', start: 'top 75%', end: 'top 15%', scrub: true }
-      })
+      // ---- about statement: word-by-word ignition (desktop only — a
+      // scrub tied to scroll position reads as "stuck half-dim" on mobile,
+      // where a single flick can overshoot or stop mid-range) ----
+      if (isDesktop) {
+        gsap.to('[data-words] .word', {
+          opacity: 1,
+          stagger: 0.06,
+          ease: 'none',
+          scrollTrigger: { trigger: '.about', start: 'top 75%', end: 'top 15%', scrub: true }
+        })
+      } else {
+        gsap.set('[data-words] .word', { opacity: 1 })
+      }
 
-      // ---- pinned horizontal photo reel ----
+      // ---- pinned horizontal photo reel (desktop only — pin+scrub fights
+      // with mobile browsers' dynamic toolbar resize; mobile gets a native
+      // swipeable strip via CSS scroll-snap instead, see styles.css) ----
       const track = document.querySelector('[data-strip-track]')
-      if (track) {
+      if (track && isDesktop) {
         const getDistance = () => track.scrollWidth - window.innerWidth + 64
         const cards = gsap.utils.toArray('.polaroid')
         gsap.to(track, {
@@ -114,7 +132,9 @@ export default function App() {
     return () => {
       ctx.revert()
       lenis.destroy()
+      clearTimeout(resizeTimer)
       window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('orientationchange', onResize)
     }
   }, [])
 
