@@ -13,9 +13,10 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-html { scroll-behavior: initial; }
+html { scroll-behavior: initial; overflow-x: hidden; width: 100%; }
 html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-smooth { scroll-behavior: auto !important; }
+html.nav-open, html.nav-open body { overflow: hidden; }
 
 body {
   background: var(--bg);
@@ -24,6 +25,7 @@ body {
   font-size: 16px;
   line-height: 1.6;
   overflow-x: hidden;
+  width: 100%;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -76,6 +78,8 @@ button { font: inherit; background: none; border: none; cursor: pointer; color: 
   mix-blend-mode: difference;
 }
 .nav__logo {
+  position: relative;
+  z-index: 41;
   font-family: var(--font-display);
   font-size: 22px;
   letter-spacing: 0.04em;
@@ -102,6 +106,27 @@ button { font: inherit; background: none; border: none; cursor: pointer; color: 
   transition: transform 0.35s cubic-bezier(0.65, 0, 0.35, 1);
 }
 .nav__links a:hover::after { transform: scaleX(1); transform-origin: left; }
+
+.nav__toggle {
+  display: none;
+  position: relative;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 32px;
+  height: 32px;
+  z-index: 41;
+}
+.nav__toggle span {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: #fff;
+  transition: transform 0.3s cubic-bezier(0.65, 0, 0.35, 1), opacity 0.3s;
+}
+.nav--open .nav__toggle span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav--open .nav__toggle span:nth-child(2) { opacity: 0; }
+.nav--open .nav__toggle span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
 /* ---------- hero ---------- */
 .hero {
@@ -604,17 +629,122 @@ button { font: inherit; background: none; border: none; cursor: pointer; color: 
 /* ---------- reveal helpers ---------- */
 .reveal { opacity: 0; transform: translateY(60px); }
 
+/* ---------- mobile nav (hamburger drawer), ≤860px ---------- */
 @media (max-width: 860px) {
-  .nav__links { display: none; }
-  .project-row { grid-template-columns: 48px 1fr; row-gap: 8px; }
+  .nav { padding: 16px 20px; padding-top: max(16px, env(safe-area-inset-top)); }
+  /* the closed bar keeps its desktop mix-blend-mode:difference (readable over
+     any background), but that blend would turn the open drawer's solid black
+     panel invisible — difference against black is a no-op — so neutralize it
+     while open */
+  .nav--open { mix-blend-mode: normal; }
+  .nav__toggle { display: flex; }
+  .nav__links {
+    position: fixed;
+    inset: 0;
+    z-index: 39;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 28px;
+    padding: 32px;
+    background: var(--bg);
+    mix-blend-mode: normal;
+    isolation: isolate;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition: opacity 0.3s ease, transform 0.3s ease, visibility 0s linear 0.3s;
+  }
+  .nav__links a { font-size: 15px; }
+  .webgl-layer { opacity: 0.7; }
+  .nav--open .nav__links {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+}
+
+/* ---------- mobile layout, ≤768px ---------- */
+@media (max-width: 768px) {
+  .project-row { grid-template-columns: 40px 1fr; row-gap: 8px; padding: 24px 4px; }
   .project-row__desc { grid-column: 2; max-width: none; }
   .project-row__stack { grid-column: 2; white-space: normal; }
-  .section { padding: 90px 20px; }
-  .hero { padding: 0 20px 40px; }
-  .strip { padding: 0; }
-  .strip .section__head { padding: 84px 20px 0; }
-  .strip__track { padding: 20px 20px 32px; }
-  .polaroid__frame { height: min(52vh, 52dvh); }
+  .project-row__name { font-size: clamp(24px, 8vw, 40px); }
+
+  .section { padding: 64px 20px; }
+  .section__head { margin-bottom: 40px; }
+  .section__title { font-size: clamp(34px, 10vw, 64px); }
+
+  .hero { padding: 0 20px max(32px, env(safe-area-inset-bottom)); }
+  .hero__kicker { font-size: 11px; letter-spacing: 0.16em; margin-bottom: 12px; }
+  .hero__title { font-size: clamp(46px, 15vw, 96px); letter-spacing: 0; }
+  .hero__meta { margin-top: 24px; gap: 16px; }
+  .hero__meta p { font-size: 11px; max-width: none; line-height: 1.7; }
+
+  .about__statement { font-size: clamp(22px, 6.5vw, 34px); line-height: 1.35; }
+  .about__quote { margin-top: 40px; font-size: 13px; }
+
+  .strip { height: auto; overflow: visible; }
+  .strip .section__head { padding: 0; margin-bottom: 24px; }
+  .strip__track {
+    width: 100%;
+    padding: 4px 20px 24px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .strip__track::-webkit-scrollbar { display: none; }
+  .polaroid { scroll-snap-align: start; }
+  .polaroid__frame { height: min(48vh, 48dvh); }
+
+  .certs__grid { grid-template-columns: 1fr; }
+  .cert-card { padding: 32px 24px 24px; min-height: 0; }
+  .cert-card__year { font-size: 56px; }
+
+  .stack__cloud { gap: 10px; }
+  .stack__chip { padding: 10px 18px; font-size: 12px; }
+
+  .marquee span { font-size: 15px; gap: 32px; }
+  .marquee__inner { gap: 32px; }
+
+  .footer { padding: 80px 20px 32px; }
+  .footer__cta { font-size: clamp(40px, 14vw, 80px); }
+  .footer__links { margin-top: 40px; gap: 20px; }
+  .footer__base { margin-top: 48px; gap: 8px; }
+
+  .preloader__name { font-size: clamp(26px, 9vw, 48px); }
+}
+
+/* ---------- compact mobile, ≤480px ---------- */
+@media (max-width: 480px) {
+  .nav__logo { font-size: 18px; }
+
+  .hero { padding: 0 16px max(24px, env(safe-area-inset-bottom)); }
+  .hero__title { font-size: clamp(38px, 16vw, 60px); line-height: 0.92; }
+  .hero__meta { flex-direction: column; align-items: flex-start; }
+
+  .section { padding: 48px 16px; }
+  .section__head { margin-bottom: 28px; flex-direction: column; align-items: flex-start; gap: 10px; }
+  .section__title { font-size: clamp(28px, 11vw, 44px); }
+
+  .about__statement { font-size: clamp(19px, 7vw, 26px); }
+
+  .strip .section__title { font-size: clamp(26px, 10vw, 40px); }
+  .strip__track { padding: 4px 16px 20px; gap: 18px; }
+  .polaroid__frame { height: 40vh; }
+  .polaroid__caption { font-size: 10px; }
+
+  .project-row__name { font-size: clamp(20px, 9vw, 30px); }
+  .project-row__desc { font-size: 13px; }
+
+  .cert-card__name { font-size: 17px; }
+  .cert-card__year { font-size: 44px; }
+  .cert-card__footer { flex-wrap: wrap; gap: 8px; }
+
+  .footer__cta { font-size: clamp(30px, 14vw, 52px); }
+  .footer__base { flex-direction: column; }
 }
 
 @media (prefers-reduced-motion: reduce) {
