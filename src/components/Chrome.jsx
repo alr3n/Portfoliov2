@@ -1,17 +1,38 @@
+import { useEffect, useState } from 'react'
 import { PROFILE } from '../data.js'
 
 export function Nav() {
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('nav-open', open)
+    return () => document.documentElement.classList.remove('nav-open')
+  }, [open])
+
+  const close = () => setOpen(false)
+
   return (
-    <nav className="nav">
-      <a href="#top" className="nav__logo">
+    <nav className={`nav${open ? ' nav--open' : ''}`}>
+      <a href="#top" className="nav__logo" onClick={close}>
         ALREN<span>.</span>
       </a>
+      <button
+        type="button"
+        className="nav__toggle"
+        aria-label={open ? 'Close menu' : 'Open menu'}
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <span />
+        <span />
+        <span />
+      </button>
       <div className="nav__links">
-        <a href="#work">Work</a>
-        <a href="#certs">Credentials</a>
-        <a href="#stack">Stack</a>
-        <a href={PROFILE.github} target="_blank" rel="noreferrer">GitHub</a>
-        <a href={PROFILE.linkedin} target="_blank" rel="noreferrer">LinkedIn</a>
+        <a href="#work" onClick={close}>Work</a>
+        <a href="#certs" onClick={close}>Credentials</a>
+        <a href="#stack" onClick={close}>Stack</a>
+        <a href={PROFILE.github} target="_blank" rel="noreferrer" onClick={close}>GitHub</a>
+        <a href={PROFILE.linkedin} target="_blank" rel="noreferrer" onClick={close}>LinkedIn</a>
       </div>
     </nav>
   )
