@@ -51,6 +51,7 @@ export default function App() {
 
     const ctx = gsap.context(() => {
       const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      const isDesktop = window.matchMedia('(min-width: 861px)').matches
 
       // ---- preloader → hero intro ----
       const intro = gsap.timeline()
@@ -80,10 +81,50 @@ export default function App() {
         scrollTrigger: { trigger: '.hero', start: 'bottom 90%', end: 'bottom 20%', scrub: true }
       })
 
-      // ---- about statement: words render at full opacity immediately,
-      // same on every screen size. (Previously desktop scrubbed opacity to
-      // scroll position; removed so behavior matches mobile everywhere.) ----
-      gsap.set('[data-words] .word', { opacity: 1 })
+      // ---- about statement: word-by-word ignition (desktop only — a
+      // scrub tied to scroll position reads as "stuck half-dim" on mobile,
+      // where a single flick can overshoot or stop mid-range) ----
+      if (isDesktop) {
+        gsap.to('[data-words] .word', {
+          opacity: 1,
+          stagger: 0.06,
+          ease: 'none',
+          scrollTrigger: { trigger: '.about', start: 'top 75%', end: 'top 15%', scrub: true }
+        })
+      } else {
+        gsap.set('[data-words] .word', { opacity: 1 })
+      }
+
+      // ---- pinned horizontal photo reel (desktop only — pin+scrub fights
+      // with mobile browsers' dynamic toolbar resize; mobile gets a native
+      // swipeable strip via CSS scroll-snap instead, see styles.css) ----
+      const track = document.querySelector('[data-strip-track]')
+      if (track && isDesktop) {
+        const getDistance = () => track.scrollWidth - window.innerWidth + 64
+        const cards = gsap.utils.toArray('.polaroid')
+        gsap.to(track, {
+          x: () => -getDistance(),
+          ease: 'none',
+          scrollTrigger: {
+            trigger: '[data-strip]',
+            start: 'top top',
+            end: () => `+=${getDistance()}`,
+            pin: true,
+            scrub: 1,
+            invalidateOnRefresh: true,
+            // settle with a card fully in view instead of stopping mid-photo
+            snap: cards.length > 1
+              ? {
+                  snapTo: 1 / (cards.length - 1),
+                  duration: { min: 0.2, max: 0.6 },
+                  delay: 0.05,
+                  ease: 'power1.inOut'
+                }
+              : false
+          }
+        })
+
+      }
 
       // ---- generic reveals ----
       ScrollTrigger.batch('.reveal', {

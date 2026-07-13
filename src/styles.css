@@ -280,7 +280,7 @@ button { font: inherit; background: none; border: none; cursor: pointer; color: 
   line-height: 1.25;
   letter-spacing: -0.01em;
 }
-.about__statement .word { display: inline-block; }
+.about__statement .word { display: inline-block; opacity: 0.15; }
 .about__statement .accent { color: var(--volt); }
 .about__quote {
   margin-top: 64px;
@@ -301,12 +301,11 @@ button { font: inherit; background: none; border: none; cursor: pointer; color: 
   text-transform: uppercase;
 }
 
-/* ---------- photo strip (native swipeable/scrollable reel, same
-   interaction on every screen size — see App.jsx for why this dropped
-   the old GSAP-pinned scroll-jacking version) ---------- */
+/* ---------- photo strip (pinned horizontal reel) ---------- */
 .strip {
-  overflow: visible;
-  height: auto;
+  overflow: hidden;
+  height: 100vh;
+  height: 100dvh;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -314,7 +313,7 @@ button { font: inherit; background: none; border: none; cursor: pointer; color: 
 }
 .strip .section__head {
   padding: 96px 32px 0;
-  margin-bottom: 24px;
+  margin-bottom: 0;
 }
 .strip .section__title { font-size: clamp(34px, 6vw, 84px); }
 .strip__track {
@@ -322,14 +321,10 @@ button { font: inherit; background: none; border: none; cursor: pointer; color: 
   align-items: flex-end;
   gap: 28px;
   padding: 24px 32px 40px;
-  width: 100%;
-  overflow-x: auto;
-  scroll-snap-type: x proximity;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  width: max-content;
+  will-change: transform;
 }
-.strip__track::-webkit-scrollbar { display: none; }
-.polaroid { flex-shrink: 0; scroll-snap-align: start; }
+.polaroid { flex-shrink: 0; }
 .polaroid__frame {
   /* sized from the viewport so the full card always fits under the title */
   height: min(58vh, 58dvh);
@@ -690,8 +685,18 @@ button { font: inherit; background: none; border: none; cursor: pointer; color: 
   .about__statement { font-size: clamp(22px, 6.5vw, 34px); line-height: 1.35; }
   .about__quote { margin-top: 40px; font-size: 13px; }
 
+  .strip { height: auto; overflow: visible; }
   .strip .section__head { padding: 0; margin-bottom: 24px; }
-  .strip__track { padding: 4px 20px 24px; }
+  .strip__track {
+    width: 100%;
+    padding: 4px 20px 24px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .strip__track::-webkit-scrollbar { display: none; }
+  .polaroid { scroll-snap-align: start; }
   .polaroid__frame { height: min(48vh, 48dvh); }
 
   .certs__grid { grid-template-columns: 1fr; }
