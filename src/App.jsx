@@ -35,11 +35,19 @@ export default function App() {
     // ---- keep ScrollTrigger honest across mobile browsers' dynamic
     // address-bar show/hide, which fires resize events mid-scroll ----
     let resizeTimer
+    let revealObserver
     const onResize = () => {
       clearTimeout(resizeTimer)
       resizeTimer = setTimeout(() => ScrollTrigger.refresh(), 200)
     }
     window.addEventListener('orientationchange', onResize)
+
+    // ---- ScrollTrigger positions are computed off document layout at
+    // setup time; late-arriving webfonts (self-hosted, but still a network
+    // request) or a slow initial paint on a constrained connection can
+    // shift that layout afterward, throwing trigger pixel positions off ----
+    document.fonts?.ready.then(() => ScrollTrigger.refresh())
+    window.addEventListener('load', () => ScrollTrigger.refresh())
 
     const ctx = gsap.context(() => {
       const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -55,7 +63,15 @@ export default function App() {
         .from('.hero__title .line > span', { yPercent: 110, duration: 1, stagger: 0.12, ease: 'power4.out' }, '-=0.45')
         .from('.hero__kicker, .hero__meta', { opacity: 0, y: 24, duration: 0.7, stagger: 0.1, ease: 'power2.out' }, '-=0.6')
 
-      if (reduced) return
+      // ---- reduced motion: skip the scroll-driven animations below, but
+      // content that CSS starts at opacity:0 (.reveal, the about-statement
+      // words) must still be pushed to its final visible state here —
+      // otherwise "skip the animation" silently becomes "hide the content
+      // forever", since nothing else would ever clear that CSS default ----
+      if (reduced) {
+        gsap.set('.reveal, [data-words] .word', { opacity: 1, y: 0 })
+        return
+      }
 
       // ---- hero title drifts up & fades as you leave ----
       gsap.to('.hero__title', {
@@ -117,6 +133,30 @@ export default function App() {
           gsap.to(els, { opacity: 1, y: 0, duration: 0.9, stagger: 0.08, ease: 'power3.out', overwrite: true })
       })
 
+      // ---- redundant safety net for the reveal above: .reveal starts at
+      // opacity:0 in CSS (so the scroll-in effect doesn't flash unstyled
+      // content), which means if ScrollTrigger's onEnter never fires for
+      // some environment-specific reason — a WebKit/IntersectionObserver
+      // quirk, main-thread contention from the WebGL scene, some other
+      // timing race in a constrained in-app-browser WebView — that content
+      // stays permanently invisible. This plain, independent
+      // IntersectionObserver (deliberately not routed through GSAP/
+      // ScrollTrigger, so it can't share whatever's wrong with them) force-
+      // reveals an element the moment it's actually on screen, then stops
+      // watching it. A no-op when ScrollTrigger already got there first —
+      // same end values, gsap.set is idempotent. ----
+      revealObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return
+            gsap.set(entry.target, { opacity: 1, y: 0 })
+            revealObserver.unobserve(entry.target)
+          })
+        },
+        { rootMargin: '0px 0px -10% 0px' }
+      )
+      document.querySelectorAll('.reveal').forEach((el) => revealObserver.observe(el))
+
       // ---- section titles slide in ----
       gsap.utils.toArray('.section__title').forEach((el) => {
         gsap.from(el, {
@@ -133,6 +173,7 @@ export default function App() {
       ctx.revert()
       lenis.destroy()
       clearTimeout(resizeTimer)
+      revealObserver?.disconnect()
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('orientationchange', onResize)
     }
