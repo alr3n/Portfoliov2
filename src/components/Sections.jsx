@@ -57,12 +57,12 @@ function Polaroid({ photo, index }) {
 
 export function PhotoStrip() {
   return (
-    <section className="section strip" id="photos" data-strip>
+    <section className="section strip" id="photos">
       <div className="section__head">
         <h2 className="section__title">Off <em>screen</em></h2>
         <span className="section__count">scroll through the reel →</span>
       </div>
-      <div className="strip__track" data-strip-track>
+      <div className="strip__track">
         {PHOTOS.map((p, i) => (
           <Polaroid key={p.file} photo={p} index={i} />
         ))}
