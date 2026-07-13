@@ -1,8 +1,25 @@
-import { Suspense, useMemo, useRef } from 'react'
+import { Component, Suspense, useMemo, useRef } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import ParticlePortrait from './ParticlePortrait.jsx'
 import { scrollState } from './scrollState.js'
+
+/** The 3D scene is purely decorative (aria-hidden). If WebGL init or a
+ * Three.js render throws — common on memory-constrained mobile WebViews
+ * like in-app browsers — this stops it from taking the rest of the page
+ * (nav, sections, footer) down with it. */
+class SceneErrorBoundary extends Component {
+  state = { failed: false }
+  static getDerivedStateFromError() {
+    return { failed: true }
+  }
+  componentDidCatch(error) {
+    console.error('3D scene failed, continuing without it:', error)
+  }
+  render() {
+    return this.state.failed ? null : this.props.children
+  }
+}
 
 const isMobile = typeof window !== 'undefined' && window.innerWidth <= 860
 
@@ -60,13 +77,23 @@ function CameraRig() {
   return null
 }
 
-export default function Scene() {
+function SceneCanvas() {
   return (
     <div className="webgl-layer" aria-hidden="true">
       <Canvas
         camera={{ position: [0, 0, 5], fov: isMobile ? 58 : 50 }}
         dpr={isMobile ? [1, 1.3] : [1, 1.8]}
         gl={{ antialias: false, alpha: true, powerPreference: 'high-performance' }}
+        onCreated={({ gl }) => {
+          // A lost GPU context (common under memory pressure in constrained
+          // mobile WebViews) doesn't throw a catchable JS error by default —
+          // it silently freezes the canvas. preventDefault() lets the
+          // browser attempt to restore it instead of abandoning it outright.
+          gl.domElement.addEventListener('webglcontextlost', (e) => {
+            e.preventDefault()
+            console.warn('WebGL context lost — page keeps working, scene will attempt to recover.')
+          })
+        }}
       >
         <Suspense fallback={null}>
           <ParticlePortrait />
@@ -76,5 +103,13 @@ export default function Scene() {
         <CameraRig />
       </Canvas>
     </div>
+  )
+}
+
+export default function Scene() {
+  return (
+    <SceneErrorBoundary>
+      <SceneCanvas />
+    </SceneErrorBoundary>
   )
 }
